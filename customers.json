@@ -1,0 +1,25 @@
+[
+  {
+    "jid": "185947069108365@lid",
+    "name": "Uche",
+    "vehicles": [
+      "Rolls-Royce 2025 model lekki phase 2"
+    ],
+    "createdAt": "2026-10-14T09:42:29.601Z",
+    "lastSeen": "2026-10-14T09:43:52.068Z"
+  },
+  {
+    "jid": "120363425082349937@newsletter",
+    "name": "Valued Client",
+    "vehicles": [],
+    "createdAt": "2026-10-14T10:06:34.348Z",
+    "lastSeen": "2026-10-14T13:14:00.496Z"
+  },
+  {
+    "jid": "120363404203874284@newsletter",
+    "name": "Valued Client",
+    "vehicles": [],
+    "createdAt": "2026-10-14T10:30:48.878Z",
+    "lastSeen": "2026-10-14T13:01:09.101Z"
+  }
+]

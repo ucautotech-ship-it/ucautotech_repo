@@ -1,0 +1,39 @@
+[
+  {
+    "timestamp": "2026-10-14T09:10:27.959Z",
+    "type": "INVOICE",
+    "invoiceNo": "UC-141760",
+    "spec": "C400 2024 model ajah Lagos",
+    "total": 60000,
+    "client": "185947069108365@lid"
+  },
+  {
+    "timestamp": "2026-10-14T09:14:29.321Z",
+    "type": "INVOICE",
+    "invoiceNo": "UC-766923",
+    "spec": "Gle63 2025 model ikeja lagos",
+    "total": 60000,
+    "roundTripKm": 20,
+    "client": "185947069108365@lid"
+  },
+  {
+    "timestamp": "2026-10-14T09:18:22.118Z",
+    "type": "INVOICE",
+    "invoiceNo": "UC-230412",
+    "spec": "Glc300 2024 model lekki phase 2",
+    "total": 95400,
+    "roundTripKm": 47.2,
+    "mobilityFee": 45400,
+    "client": "185947069108365@lid"
+  },
+  {
+    "timestamp": "2026-10-14T09:43:52.089Z",
+    "type": "INVOICE",
+    "invoiceNo": "UC-523636",
+    "spec": "Rolls-Royce 2025 model lekki phase 2",
+    "total": 95400,
+    "roundTripKm": 47.2,
+    "mobilityFee": 45400,
+    "client": "185947069108365@lid"
+  }
+]

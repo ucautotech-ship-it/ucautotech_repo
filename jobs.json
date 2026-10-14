@@ -1,0 +1,19 @@
+[
+  {
+    "invoiceNo": "UC-523636",
+    "clientJid": "185947069108365@lid",
+    "specification": "Rolls-Royce 2025 model lekki phase 2",
+    "totalEstimate": 95400,
+    "breakdown": {
+      "roundTripKm": 47.2,
+      "ratePerKm": 750,
+      "transitDistanceFee": 35400,
+      "luggageAllowance": 5000,
+      "teamAllowance": 5000,
+      "baseFee": 50000,
+      "mobilityFee": 45400
+    },
+    "status": "Quotation Sent",
+    "createdAt": "2026-10-14T09:43:52.091Z"
+  }
+]
