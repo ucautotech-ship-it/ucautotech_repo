@@ -1,0 +1,5 @@
+[user]
+	name = UCAUTOTECH
+	email = ucautotech@example.com
+[safe]
+	directory = /storage/emulated/0/ucautotech_repo

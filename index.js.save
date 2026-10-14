@@ -1,0 +1,94 @@
+
+
+
+
+
+2k2o2o2o
+                const [jobCode, vehicle, issue] = parts;
+
+                db.run(
+                    `INSERT INTO job_cards (job_code, phone, vehicle, issue, status) VALUES (?, ?, ?, ?, 'In Progress')`,
+                    [jobCode, senderPhone, vehicle, issue],
+                    async (err) => {
+                        if (err) {
+                            await sock.sendMessage(senderJid, { text: `[UCAUTOTECH WMS] Error: Job code *${jobCode}* already exists or invalid.` });
+                        } else {
+                            await sock.sendMessage(senderJid, { 
+                                text: `[UCAUTOTECH WMS] Job Card Created Successfully!\n\n*Job Code:* ${jobCode}\n*Vehicle:* ${vehicle}\n*Issue:* ${issue}\n*Status:* In Progress` 
+                            });
+                        }
+                    }
+                );
+            }
+            // 2. Job Card Status Lookup e.g., "STATUS UC-1001"
+            else if (upperText.startsWith('STATUS')) {
+                const parts = text.split(' ');
+                const jobCode = parts[1];
+
+                if (!jobCode) {
+                    await sock.sendMessage(senderJid, { text: `[UCAUTOTECH WMS] Please provide a Job Code. Example: STATUS UC-1001` });
+                    continue;
+                }
+
+                db.get(`SELECT * FROM job_cards WHERE job_code = ?`, [jobCode], async (err, row) => {
+                    if (err || !row) {
+                        await sock.sendMessage(senderJid, { text: `[UCAUTOTECH WMS] Job code *${jobCode}* not found in workshop records.` });
+                    } else {
+                        await sock.sendMessage(senderJid, { 
+                            text: `[UCAUTOTECH WMS]\n*Job Code:* ${row.job_code}\n*Vehicle:* ${row.vehicle}\n*Issue:* ${row.issue}\n*Status:* *${row.status}*` 
+                        });
+                    }
+                });
+            } 
+            // 3. Diagnostic Fault Code Query e.g., "DTC P189200"
+            else if (upperText.startsWith('DTC')) {
+                const dtcCode = text.split(' ')[1] || 'UNKNOWN';
+                await sock.sendMessage(senderJid, { 
+                    text: `[UCAUTOTECH DIAGNOSTICS]\nQuerying fault code: *${dtcCode}*\n\n*(Note: Live VCI 2.0 telemetry scan & live data streaming will link directly upon laptop deployment).*` 
+                });
+            }
+            // 4. Smart Key Programming Reference e.g., "KEY BENZ"
+            else if (upperText.startsWith('KEY')) {
+                const brand = text.split(' ')[1]?.toUpperCase() || '';
+                let info = "";
+
+                switch(brand) {
+                    case 'BENZ':
+                        info = "*MERCEDES-BENZ IMMO SERVICE*\n- FBS3: OBD / IR key programming supported.\n- FBS4: EZS/ECM virginization & dealer server requirements apply.";
+                        break;
+                    case 'BMW':
+                        info = "*BMW / MINI IMMO SERVICE*\n- CAS1 - CAS3+: OBD fast learning.\n- CAS4 / FEM / BDC: Bench dump required via VVDI / Autel XP400 before transponder write.";
+                        break;
+                    case 'VW':
+                    case 'AUDI':
+                    case 'BENTLEY':
+                        info = "*VW / AUDI / BENTLEY (VAG) IMMO SERVICE*\n- MQB / Immo5 platforms: Read CS/PIN via ODIS-E / VVDI2 prior to key pre-coding.";
+                        break;
+                    case 'ROVER':
+                    case 'JLR':
+                    case 'LANDROVER':
+                        info = "*RANGE ROVER / JLR IMMO SERVICE*\n- KVM module reading required for un-writeable target chips. OBD key addition supported for standard firmware.";
+                        break;
+                    default:
+                        info = "*UCAUTOTECH SMART KEY PROGRAMMING*\nSend: *KEY <BRAND>*\nOptions: BENZ, BMW, VW, BENTLEY, JLR";
+                }
+                await sock.sendMessage(senderJid, { text: `[UCAUTOTECH KEY SERVICES]\n\n${info}` });
+            }
+            // 5. ECM Coding & Flashing Reference e.g., "ECM BMW"
+            else if (upperText.startsWith('ECM')) {
+                const brand = text.split(' ')[1]?.toUpperCase() || 'GENERAL';
+                await sock.sendMessage(senderJid, { 
+                    text: `[UCAUTOTECH ECM CODING & CLONING]\nTarget Brand: *${brand}*\nCapability: SCN / Variant Coding, E-Sys flashing, ECU cloning & bench checksum calculation ready for J2534 PC pass-thru.` 
+                });
+            }
+            // 6. Default Main Menu
+            else {
+                await sock.sendMessage(senderJid, { 
+                    text: `*UCAUTOTECH Workshop Management System (Lagos)*\n\nSend a command to proceed:\n- *NEWJOB JobCode | Vehicle | Issue* : Create Job Card\n- *STATUS <JobCode>* : Check repair progress\n- *DTC <FaultCode>* : Diagnostic code lookup\n- *KEY <Brand>* : Key programming guidance (BENZ, BMW, VW, BENTLEY, JLR)\n- *ECM <Brand>* : ECM coding & ECU flash capabilities` 
+                });
+            }
+        }
+    });
+}
+
+startBot();

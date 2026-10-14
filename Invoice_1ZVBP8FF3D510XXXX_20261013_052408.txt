@@ -1,0 +1,10 @@
+UCAUTOTECH OFFICIAL WORKSHOP ESTIMATE
+--------------------------------------------------
+1) Client Summary: 2012 Ford Explorer - Lagos Zone
+2) Root Cause Analysis: Active DTCs (P189200, P0300) detected. Powertrain & 4WD module fault.
+3) Required Replacement Parts: Ignition Coil Packs, Spark Plugs, 4WD Shift Solenoid.
+4) Labor & Diagnostic Fees: ₦85,000 estimated total.
+5) Recommendation: Replace worn components, clear fault memory, and execute live data validation.
+
+PAYMENT DETAILS:
+🏦 Bank: UBA | Account: UCAUTOTECH / UC AUTOMOBILE CARE
