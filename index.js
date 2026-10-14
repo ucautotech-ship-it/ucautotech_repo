@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { GoogleGenAI } = require('@google/genai');
 const fs = require('fs');
 const winston = require('winston');
@@ -20,6 +20,19 @@ const logger = winston.createLogger({
 console.log = (msg) => logger.info(typeof msg === 'object' ? JSON.stringify(msg) : msg);
 console.error = (msg) => logger.error(typeof msg === 'object' ? JSON.stringify(msg) : msg);
 
+// Financial & Activity Ledger
+const LEDGER_FILE = 'wms_ledger.json';
+function logTransaction(entry) {
+    let ledger = [];
+    try {
+        if (fs.existsSync(LEDGER_FILE)) {
+            ledger = JSON.parse(fs.readFileSync(LEDGER_FILE, 'utf8'));
+        }
+    } catch (e) {}
+    ledger.push({ timestamp: new Date().toISOString(), ...entry });
+    fs.writeFileSync(LEDGER_FILE, JSON.stringify(ledger, null, 2));
+}
+
 async function initializeUCAUTOTECH_WMS() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
@@ -37,12 +50,13 @@ async function initializeUCAUTOTECH_WMS() {
                 const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
                 if (shouldReconnect) initializeUCAUTOTECH_WMS();
             } else if (connection === 'open') {
-                console.log("[UCAUTOTECH WMS v3.21] 3D Nano-Print Graphic Engine Forced Online!");
+                console.log("[UCAUTOTECH WMS v3.25] Enterprise Modules (Voice, Parts, & Daily Ledger) Online!");
                 startAutonomousStatusEngine(sock);
+                startDailyFinancialCron(sock);
             }
         });
 
-        // Autonomous Background Status Broadcast Loop
+        // 1. Automated Background Status Broadcast Loop
         function startAutonomousStatusEngine(activeSock) {
             setInterval(async () => {
                 try {
@@ -58,6 +72,28 @@ async function initializeUCAUTOTECH_WMS() {
                     console.error("[STATUS BROADCAST ERROR]:", err.message);
                 }
             }, 4 * 60 * 60 * 1000);
+        }
+
+        // 2. Automated Daily Revenue & Job Summary Report Cron
+        function startDailyFinancialCron(activeSock) {
+            setInterval(async () => {
+                try {
+                    if (!fs.existsSync(LEDGER_FILE)) return;
+                    const ledger = JSON.parse(fs.readFileSync(LEDGER_FILE, 'utf8'));
+                    const today = new Date().toDateString();
+                    const todaysEntries = ledger.filter(item => new Date(item.timestamp).toDateString() === today);
+                    
+                    if (todaysEntries.length === 0) return;
+
+                    let totalInvoices = todaysEntries.filter(i => i.type === 'INVOICE').length;
+                    let summaryText = `UCAUTOTECH ADMIN - DAILY REVENUE REPORT\nDate: ${today}\n\nTotal Invoices Generated: ${totalInvoices}\nLogged Transactions: ${todaysEntries.length}\n\nSystem operating at peak 24/7 efficiency.`;
+                    
+                    // Dispatch to admin (You can replace with your specific admin JID if needed, or broadcast locally)
+                    console.log("[DAILY REPORT SUMMARY]:\n" + summaryText);
+                } catch (err) {
+                    console.error("[DAILY CRON ERROR]:", err.message);
+                }
+            }, 24 * 60 * 60 * 1000);
         }
 
         // Call Interception Handler
@@ -85,13 +121,47 @@ async function initializeUCAUTOTECH_WMS() {
                 const msgObj = m.message;
                 if (!msgObj) continue;
 
-                const messageContent = msgObj.conversation || 
+                let messageContent = msgObj.conversation || 
                                        msgObj.extendedTextMessage?.text || 
                                        msgObj.imageMessage?.caption || '';
 
-                const lowerContent = messageContent.toLowerCase();
-                let replyText = "";
                 let imageToSend = null;
+                let replyText = "";
+
+                // 3. Voice Note / Audio Processing Module
+                if (msgObj.audioMessage) {
+                    try {
+                        const buffer = await downloadMediaMessage(m, 'buffer', {});
+                        // Temporary save audio for Gemini Multimodal Analysis
+                        fs.writeFileSync('temp_audio.ogg', buffer);
+                        
+                        const audioPart = {
+                            inlineData: {
+                                data: buffer.toString("base64"),
+                                mimeType: msgObj.audioMessage.mimetype || "audio/ogg"
+                            }
+                        };
+
+                        const response = await ai.models.generateContent({
+                            model: 'gemini-2.5-flash',
+                            contents: [audioPart, "You are a master automotive diagnostic expert for UCAUTOTECH. Analyze this client voice note describing a vehicle issue. Provide a professional technical assessment and recommended service action."]
+                        });
+
+                        replyText = "UCAUTOTECH / UC AUTOMOBILE CARE - AUDIO DIAGNOSTIC ADVISORY\n\n" +
+                                    response.text + "\n\n" +
+                                    "Reply 1-8 for service menus or provide your vehicle specifications for an official invoice.";
+                        
+                        if (fs.existsSync('temp_audio.ogg')) fs.unlinkSync('temp_audio.ogg');
+                    } catch (audioErr) {
+                        console.error("[AUDIO PARSE ERROR]:", audioErr);
+                        replyText = "UCAUTOTECH / UC AUTOMOBILE CARE - ADVISORY\n\nWe received your voice note. Our master technicians will evaluate your vehicle's audio symptoms upon inspection.";
+                    }
+
+                    await sock.sendMessage(senderJid, { text: replyText });
+                    continue;
+                }
+
+                const lowerContent = messageContent.toLowerCase();
 
                 const masterServiceMenu = 
                     "Good morning Mr. Uche,\n\n" +
@@ -117,14 +187,15 @@ async function initializeUCAUTOTECH_WMS() {
                 }
                 // Handle Payment Routing
                 else if (lowerContent.includes('confirm') || lowerContent.includes('pay') || lowerContent.includes('send account')) {
+                    let refTag = "#UC-" + Math.floor(100000 + Math.random() * 900000);
                     replyText = "UCAUTOTECH / UC AUTOMOBILE CARE - OFFICIAL WORKSHOP INVOICE\n\n" +
                                 "BANK PAYMENT ROUTING:\n" +
                                 "• Bank: UBA Bank\n" +
                                 "• Account Name: UCAUTOTECH / UC AUTOMOBILE CARE\n" +
-                                "• Account Number: [Insert UBA Account Number Here]\n" +
-                                "• Reference Tag: #UC-" + Math.floor(100000 + Math.random() * 900000) + "\n\n" +
+                                "• Reference Tag: " + refTag + "\n\n" +
                                 "Verification: Transfer exact amount above for instant Green Light clearance.";
                     imageToSend = 'invoice_template.jpg';
+                    logTransaction({ type: 'PAYMENT_REQUEST', ref: refTag, client: senderJid });
                 }
                 // Handle Number Selection (1 to 8)
                 else if (/^[1-8]$/.test(messageContent.trim())) {
@@ -149,19 +220,19 @@ async function initializeUCAUTOTECH_WMS() {
                                 "Standard Rate: " + basePrice + "\n\n" +
                                 "Next Step: Reply with your vehicle Model, Year, and Location (e.g. 2017 Bentley Bentayga, Lekki) to generate your official electronic invoice!";
                 }
-                // Handle AI Diagnostic Trouble Codes or General Technical Queries
-                else if (lowerContent.includes('p0') || lowerContent.includes('p1') || lowerContent.includes('p2') || lowerContent.includes('code') || lowerContent.includes('fault') || lowerContent.includes('symptom')) {
+                // Handle Interactive Parts & Diagnostic Quote Estimator or Fault Codes
+                else if (lowerContent.includes('part') || lowerContent.includes('price') || lowerContent.includes('replace') || lowerContent.includes('p0') || lowerContent.includes('p1') || lowerContent.includes('code') || lowerContent.includes('fault')) {
                     try {
                         const response = await ai.models.generateContent({
                             model: 'gemini-2.5-flash',
-                            contents: "You are a master automotive diagnostic expert for UCAUTOTECH. Analyze this client query: \"" + messageContent + "\". Provide a concise, professional technical breakdown."
+                            contents: "You are a master automotive parts and diagnostic advisor for UCAUTOTECH. Analyze this client request: \"" + messageContent + "\". Provide a professional estimate breakdown including estimated part sourcing and labor context in Naira (₦)."
                         });
                         
-                        replyText = "UCAUTOTECH / UC AUTOMOBILE CARE - AI DIAGNOSTIC ADVISORY\n\n" +
+                        replyText = "UCAUTOTECH / UC AUTOMOBILE CARE - PARTS & QUOTE ESTIMATOR\n\n" +
                                     response.text + "\n\n" +
                                     "Reply 1-8 for service menus or provide your vehicle specifications for an official invoice.";
                     } catch (aiErr) {
-                        replyText = "UCAUTOTECH / UC AUTOMOBILE CARE - ADVISORY\n\nWe received your technical inquiry. Our master technicians will evaluate this during your inspection.";
+                        replyText = "UCAUTOTECH / UC AUTOMOBILE CARE - ADVISORY\n\nWe received your parts/diagnostic inquiry. Our spare parts desk will verify availability and quote you shortly.";
                     }
                 }
                 // Handle Vehicle Specifications & Invoicing -> Force 3D Nano-Print Graphic Attachment
@@ -196,8 +267,8 @@ async function initializeUCAUTOTECH_WMS() {
                                     "• Account Name: UCAUTOTECH / UC AUTOMOBILE CARE\n\n" +
                                     "Verification: Transfer exact amount above for instant Green Light clearance!";
 
-                        // Force attach the 3D nano-print image graphic
                         imageToSend = 'invoice_template.jpg';
+                        logTransaction({ type: 'INVOICE', invoiceNo, spec: messageContent, client: senderJid });
                     } else {
                         replyText = masterServiceMenu;
                     }
