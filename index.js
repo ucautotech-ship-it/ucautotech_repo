@@ -1,5 +1,9 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { GoogleGenAI } = require('@google/genai');
+const fs = require('fs');
 const winston = require('winston');
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "API_KEY_PLACEHOLDER" });
 
 const logger = winston.createLogger({
     level: 'info',
@@ -34,9 +38,31 @@ async function initializeUCAUTOTECH_WMS() {
                 console.log(`[CONNECTION CLOSED] Reconnecting: ${shouldReconnect}`);
                 if (shouldReconnect) initializeUCAUTOTECH_WMS();
             } else if (connection === 'open') {
-                console.log("[UCAUTOTECH WMS v3.11] Enterprise Autonomous System online with Branded Invoice Generator!");
+                console.log("[UCAUTOTECH WMS v3.15] Autonomous Studio, AI Diagnostics & Status Broadcast Engine online!");
+                
+                // Launch Autonomous Background Status Broadcaster (Runs every 4 hours)
+                startAutonomousStatusEngine(sock);
             }
         });
+
+        // Autonomous Background Status Broadcast Loop
+        function startAutonomousStatusEngine(activeSock) {
+            setInterval(async () => {
+                try {
+                    const statusCaption = `🚀 **UCAUTOTECH VIP WORKSHOP STATUS BROADCAST** 🟢\n═══════════════════════════════\n🔧 Expert On-Site Diagnostics, Tiered Pricing & AI Fault Analysis.\n\n🔹 2015 & Older: ₦100,000 base\n🔹 2016 & Newer: ₦200,000 – ₦300,000\n🔹 Interstate: +50% Labor Markup\n\nMessage us now for instant service invoices and secure UBA payment routing!`;
+                    
+                    if (fs.existsSync('ucautotech_promo.jpg')) {
+                        await activeSock.sendMessage('status@broadcast', {
+                            image: fs.readFileSync('ucautotech_promo.jpg'),
+                            caption: statusCaption
+                        });
+                        console.log("[AUTONOMOUS STATUS] Successfully broadcasted branded promo graphic to WhatsApp status story.");
+                    }
+                } catch (err) {
+                    console.error("[STATUS BROADCAST ERROR] Could not push to status story:", err.message);
+                }
+            }, 4 * 60 * 60 * 1000); // 4-hour interval cycle
+        }
 
         // Call Interception Handler
         sock.ev.on('call', async (calls) => {
@@ -49,13 +75,13 @@ async function initializeUCAUTOTECH_WMS() {
                         console.log("[CALL ERROR] Could not reject call:", err.message);
                     }
                     await sock.sendMessage(call.from, {
-                        text: "🏛️ *UCAUTOTECH VIP WORKSHOP* 🟢\n\nCalls are automatically deflected to our 24/7 digital advisory. Please send your vehicle model, year, and exact location to generate an official branded itemized inspection invoice."
+                        text: "🏛️ *UCAUTOTECH VIP WORKSHOP* 🟢\n\nCalls are automatically deflected to our 24/7 digital advisory. Type 'promo' to receive our brand promotional suite and service subscriptions."
                     });
                 }
             }
         });
 
-        // Message Listener with Branded Invoice Generation
+        // Comprehensive Master Message Listener
         sock.ev.on('messages.upsert', async ({ messages, type }) => {
             if (type !== 'notify') return;
 
@@ -70,24 +96,59 @@ async function initializeUCAUTOTECH_WMS() {
                                        msgObj.extendedTextMessage?.text || 
                                        msgObj.imageMessage?.caption || '';
 
-                const isAudio = !!msgObj.audioMessage;
                 const lowerContent = messageContent.toLowerCase();
+                console.log(`[INCOMING EVENT v3.15] Target: ${senderJid} | Content: "${messageContent}"`);
 
-                console.log(`[INCOMING EVENT v3.11] Target: ${senderJid} | Content: "${messageContent}" | Audio: ${isAudio}`);
+                let replyText = "";
+                let imageToSend = null;
 
-                let replyText = `🏛️ *UCAUTOTECH VIP WORKSHOP* 🟢
-══════════════════════
-*OFFICIAL DIGITAL ADVISORY*
-══════════════════════
-Welcome! To generate your instant branded itemized invoice, please reply with:
-1️⃣ **Vehicle Model & Year** (e.g. 2012 Ford Explorer or 2024 Sorento)
-2️⃣ **Exact Location / Address** (Lagos / Interstate)`;
+                if (lowerContent === '!promo' || lowerContent === 'promo' || lowerContent === 'subscription' || lowerContent === 'flyer') {
+                    if (fs.existsSync('ucautotech_promo.jpg')) {
+                        imageToSend = 'ucautotech_promo.jpg';
+                    }
+                    replyText = `🚀 **UCAUTOTECH VIP WORKSHOP & SUBSCRIPTION SUITE** 🟢
+═══════════════════════════════
+🔧 *Autonomous On-Site Diagnostics & Repair*
 
-                if (isAudio) {
-                    replyText = `🏛️ *UCAUTOTECH VIP WORKSHOP* 🟢
-══════════════════════
-Audio note received! Our automated v3.11 enterprise engine processes text best. Please text your vehicle's **model, year, and location** to generate your official branded invoice.`;
-                } else {
+🔹 **Tiered Pricing Structure:**
+• 2015 & Older: ₦100,000 base
+• 2016 & Newer: ₦200,000 – ₦300,000
+• Interstate: +50% Labor Surcharge
+• Separate Mobility & Transport Pricing
+
+⭐ **VIP Maintenance Subscriptions Available:**
+Sign up for corporate fleet monitoring, priority technician dispatch, and advanced AI diagnostics. Reply with your vehicle **model, year, and location** to generate your official electronic invoice!`;
+                } 
+                else if (lowerContent.includes('confirm') || lowerContent.includes('pay') || lowerContent.includes('send account')) {
+                    replyText = `🏛️ *UCAUTOTECH VIP WORKSHOP* - PAYMENT ROUTING 🟢
+═══════════════════════════════
+🏦 **Bank Name:** United Bank for Africa (UBA)
+📌 **Account Number:** [Insert UBA Account Number Here]
+👤 **Account Name:** UC Auto Care / UCAUTOTECH
+🔖 **Reference Tag:** #UC-${Math.floor(100000 + Math.random() * 900000)}
+
+⚠️ *Green Light (🟢) Clearance:* Please transfer the exact total sum and reply with your payment receipt/screenshot here to instantly lock in your technician dispatch!`;
+                } 
+                else if (lowerContent.includes('p0') || lowerContent.includes('p1') || lowerContent.includes('p2') || lowerContent.includes('code') || lowerContent.includes('fault') || lowerContent.includes('symptom') || lowerContent.includes('engine')) {
+                    try {
+                        console.log("[AI DIAGNOSTIC] Consulting Gemini AI for trouble code/symptom breakdown...");
+                        const response = await ai.models.generateContent({
+                            model: 'gemini-2.5-flash',
+                            contents: `You are a master automotive diagnostic expert for UCAUTOTECH. Analyze this client query: "${messageContent}". Provide a concise, professional, 3-point technical breakdown with potential causes and a recommendation for our on-site inspection.`
+                        });
+                        
+                        replyText = `🤖 **UCAUTOTECH AI DIAGNOSTIC ADVISORY** 🟢
+═══════════════════════════════
+${response.text}
+
+───────────────────────────────
+*Next Step:* Type **"promo"** for subscription options or reply with your vehicle's model, year, and location for an itemized invoice!`;
+                    } catch (aiErr) {
+                        console.error("[AI ERROR] Failed to query Gemini:", aiErr.message);
+                        replyText = "🏛️ *UCAUTOTECH VIP ADVISORY* 🟢\n\nWe received your technical inquiry. Our master technicians will evaluate this during your on-site inspection. Please reply with your vehicle model, year, and location.";
+                    }
+                } 
+                else {
                     const yearMatch = messageContent.match(/\b(20[0-2][0-9]|19[8-9][0-9])\b/);
                     
                     if (yearMatch) {
@@ -109,15 +170,12 @@ Audio note received! Our automated v3.11 enterprise engine processes text best. 
                             bracketLabel = "₦200,000 - ₦300,000 (2016 & Newer)";
                         }
 
-                        // Apply 50% Interstate surcharge if applicable
                         if (isInterstate) {
                             minLabor *= 1.5;
                             maxLabor *= 1.5;
                         }
 
-                        // Separate Mobility Fee calculation baseline
                         let mobilityFee = isInterstate ? 50000 : 20000; 
-
                         let totalMin = minLabor + mobilityFee;
                         let totalMax = maxLabor + mobilityFee;
 
@@ -145,18 +203,31 @@ Audio note received! Our automated v3.11 enterprise engine processes text best. 
 💼 **ITEMIZED COST BREAKDOWN:**
 ───────────────────────────────
 1️⃣ **Labor / Diagnostic Fee:** ${laborDisplay}
-2️⃣ **Mobility / Transport Fee:** ₦${mobilityFee.toLocaleString()} *(Client-provided logistics)*
+2️⃣ **Mobility / Transport Fee:** ₦${mobilityFee.toLocaleString()} *(Distance-based logistics)*
 
 ═══════════════════════════════
 💰 **TOTAL PAYABLE AMOUNT:** ${totalDisplay}
 ═══════════════════════════════
 
 🏦 *Next Step for Green Light (🟢) Clearance:*
-Please reply with your confirmation so we can issue your UBA payment routing and dispatch your dedicated senior technician team!`;
+Type **"Confirm & Pay"** to receive your official UBA payment routing details!`;
+                    } else {
+                        replyText = `🏛️ *UCAUTOTECH VIP WORKSHOP* 🟢
+═══════════════════════════════
+Welcome! We provide advanced on-site diagnostics, AI fault analysis, and branded invoicing.
+
+Type **"promo"** or **"subscription"** to view our professional brand suite and flyer, or reply with your vehicle **Model, Year, and Location**.`;
                     }
                 }
 
-                await sock.sendMessage(senderJid, { text: replyText });
+                if (imageToSend) {
+                    await sock.sendMessage(senderJid, { 
+                        image: fs.readFileSync(imageToSend),
+                        caption: replyText 
+                    });
+                } else {
+                    await sock.sendMessage(senderJid, { text: replyText });
+                }
             }
         });
 
