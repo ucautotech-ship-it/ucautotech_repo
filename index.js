@@ -37,7 +37,7 @@ async function initializeUCAUTOTECH_WMS() {
                 const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
                 if (shouldReconnect) initializeUCAUTOTECH_WMS();
             } else if (connection === 'open') {
-                console.log("[UCAUTOTECH WMS v3.20] 3D Nano-Print Invoice Engine Online!");
+                console.log("[UCAUTOTECH WMS v3.21] 3D Nano-Print Graphic Engine Forced Online!");
                 startAutonomousStatusEngine(sock);
             }
         });
@@ -124,7 +124,7 @@ async function initializeUCAUTOTECH_WMS() {
                                 "• Account Number: [Insert UBA Account Number Here]\n" +
                                 "• Reference Tag: #UC-" + Math.floor(100000 + Math.random() * 900000) + "\n\n" +
                                 "Verification: Transfer exact amount above for instant Green Light clearance.";
-                    if (fs.existsSync('invoice_template.jpg')) imageToSend = 'invoice_template.jpg';
+                    imageToSend = 'invoice_template.jpg';
                 }
                 // Handle Number Selection (1 to 8)
                 else if (/^[1-8]$/.test(messageContent.trim())) {
@@ -164,7 +164,7 @@ async function initializeUCAUTOTECH_WMS() {
                         replyText = "UCAUTOTECH / UC AUTOMOBILE CARE - ADVISORY\n\nWe received your technical inquiry. Our master technicians will evaluate this during your inspection.";
                     }
                 }
-                // Handle Vehicle Specifications & Invoicing -> Attach 3D Nano-Print Graphic
+                // Handle Vehicle Specifications & Invoicing -> Force 3D Nano-Print Graphic Attachment
                 else {
                     const yearMatch = messageContent.match(/\b(20[0-2][0-9]|19[8-9][0-9])\b/);
                     
@@ -196,16 +196,14 @@ async function initializeUCAUTOTECH_WMS() {
                                     "• Account Name: UCAUTOTECH / UC AUTOMOBILE CARE\n\n" +
                                     "Verification: Transfer exact amount above for instant Green Light clearance!";
 
-                        // Attach the 3D nano-print invoice graphic template
-                        if (fs.existsSync('invoice_template.jpg')) {
-                            imageToSend = 'invoice_template.jpg';
-                        }
+                        // Force attach the 3D nano-print image graphic
+                        imageToSend = 'invoice_template.jpg';
                     } else {
                         replyText = masterServiceMenu;
                     }
                 }
 
-                if (imageToSend) {
+                if (imageToSend && fs.existsSync(imageToSend)) {
                     await sock.sendMessage(senderJid, { 
                         image: fs.readFileSync(imageToSend),
                         caption: replyText 
