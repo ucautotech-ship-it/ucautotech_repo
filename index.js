@@ -37,7 +37,7 @@ const MASTER_SERVICE_MENU =
     "Good day from UCAUTOTECH,\n\n" +
     "==============================\n" +
     "       UCAUTOTECH / UC AUTOMOBILE CARE       \n" +
-    "          VIP WORKSHOP SERVICES v3.35         \n" +
+    "          VIP WORKSHOP SERVICES v3.40         \n" +
     "==============================\n\n" +
     "1. Full System Diagnosis (₦30k - ₦50k)\n" +
     "2. ECM / PCM Programming & Flashing (₦70k - ₦350k)\n" +
@@ -47,7 +47,7 @@ const MASTER_SERVICE_MENU =
     "6. Engine Replacement (₦100k - ₦450k)\n" +
     "7. Pre-Purchase Vehicle Inspection (₦150k - ₦200k+)\n" +
     "8. DTC Lookup & Maintenance Subscription (₦5,000/mo)\n\n" +
-    "Reply 1-8 for service info, type #location for workshop map pin, or send your vehicle specs (e.g. 2018 Lexus RX350, Lekki) for an instant verified invoice with round-trip mobility calculation!";
+    "Reply 1-8 for service info, type #location for workshop map pin, or send your vehicle specs (e.g. 2018 Lexus RX350, Lekki) for an instant verified invoice with equipment & team dispatch mobility!";
 
 const SERVICE_DETAILS = {
     '1': { name: "Full System Diagnosis", price: "₦30,000 - ₦50,000", baseNum: 40000 },
@@ -77,7 +77,7 @@ async function initializeUCAUTOTECH_WMS() {
                 const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
                 if (shouldReconnect) initializeUCAUTOTECH_WMS();
             } else if (connection === 'open') {
-                console.log("[UCAUTOTECH WMS v3.35] Round-Trip Mobility Engine Online!");
+                console.log("[UCAUTOTECH WMS v3.40] Equipment & Team Mobility Engine Online!");
                 startAutonomousStatusEngine(sock);
                 startDailyFinancialCron(sock);
             }
@@ -86,7 +86,7 @@ async function initializeUCAUTOTECH_WMS() {
         function startAutonomousStatusEngine(activeSock) {
             setInterval(async () => {
                 try {
-                    const statusCaption = "UCAUTOTECH / UC AUTOMOBILE CARE\nVIP WORKSHOP SERVICES v3.35\n\nOn-site mobile dispatch with precise round-trip distance calculations.\nMessage us for instant automated invoicing!";
+                    const statusCaption = "UCAUTOTECH / UC AUTOMOBILE CARE\nVIP WORKSHOP SERVICES v3.40\n\nOn-site mobile team dispatch with full diagnostic scanner rigs & tool transport.\nMessage us for instant automated invoicing!";
                     if (fs.existsSync('ucautotech_promo.jpg')) {
                         await activeSock.sendMessage('status@broadcast', {
                             image: fs.readFileSync('ucautotech_promo.jpg'),
@@ -178,7 +178,7 @@ async function initializeUCAUTOTECH_WMS() {
                 if (lowerContent.includes('#location') || lowerContent.includes('location') || lowerContent.includes('address')) {
                     replyText = "UCAUTOTECH / UC AUTOMOBILE CARE - WORKSHOP LOCATION\n\n" +
                                 "Address: Lagos Metropolitan Area / On-Site Dispatch Across Nigeria\n" +
-                                "Map Pin / Navigation: Contact our desk directly or reply with your area name for round-trip mobility dispatch calculations.";
+                                "Map Pin / Navigation: Contact our desk directly or reply with your area name for mobile equipment & team dispatch calculations.";
                 }
                 else if (lowerContent.includes('confirm') || lowerContent.includes('pay') || lowerContent.includes('send account')) {
                     const refTag = "#UC-" + Math.floor(100000 + Math.random() * 900000);
@@ -196,7 +196,7 @@ async function initializeUCAUTOTECH_WMS() {
                     const service = SERVICE_DETAILS[choice];
 
                     replyText = "UCAUTOTECH / UC AUTOMOBILE CARE\n" +
-                                "VIP WORKSHOP SERVICES v3.35\n\n" +
+                                "VIP WORKSHOP SERVICES v3.40\n\n" +
                                 "Selected Service: " + service.name + "\n" +
                                 "Standard Rate: " + service.price + "\n\n" +
                                 "Next Step: Reply with your vehicle Model, Year, and Location (e.g. 2017 Bentley Bentayga, Lekki) to generate your official electronic invoice!";
@@ -225,14 +225,18 @@ async function initializeUCAUTOTECH_WMS() {
 
                         let baseFee = vehicleYear >= 2016 ? 50000 : 40000;
                         
-                        // Round-trip calculation parameters:
-                        // One-way distance estimation
+                        // Distance and Logistics Breakdown
                         let oneWayKm = isLekki ? 23.6 : (isMainland ? 10.0 : 15.0);
                         let roundTripKm = oneWayKm * 2;
-                        let ratePerKm = 500; // ₦500 per km covering fuel, wear, and transit time
-                        let mobilityFee = roundTripKm * ratePerKm;
+                        let ratePerKm = 750; // Updated rate covering ride fares & transit
+                        let transitDistanceFee = roundTripKm * ratePerKm;
                         
+                        let luggageAllowance = 5000; // Tooling / Scanner / Rig transport allowance
+                        let teamAllowance = 5000;    // Secondary Technician dispatch allowance
+                        
+                        let mobilityFee = transitDistanceFee + luggageAllowance + teamAllowance;
                         let totalEstimate = baseFee + mobilityFee;
+                        
                         let invoiceNo = "UC-" + Math.floor(100000 + Math.random() * 900000);
                         let currentDate = new Date().toLocaleDateString();
 
@@ -243,14 +247,15 @@ async function initializeUCAUTOTECH_WMS() {
                                     "Invoice No: #" + invoiceNo + "\n" +
                                     "Date: " + currentDate + "\n" +
                                     "Client: Valued Client\n\n" +
-                                    "SPECIFICATION: " + messageContent + "\n" +
-                                    "MOBILITY (ROUND-TRIP):\n" +
-                                    "• One-Way Distance: ~" + oneWayKm + " km\n" +
-                                    "• Total Round-Trip: " + roundTripKm + " km (Going & Coming)\n" +
-                                    "• Rate: ₦" + ratePerKm + "/km\n" +
-                                    "• Calculated Mobility Surcharge: ₦" + mobilityFee.toLocaleString() + "\n\n" +
-                                    "SERVICE: Full System Diagnosis & Inspection\n" +
-                                    "• Base Inspection Fee: ₦" + baseFee.toLocaleString() + "\n\n" +
+                                    "SPECIFICATION: " + messageContent + "\n\n" +
+                                    "MOBILITY & DISPATCH BREAKDOWN:\n" +
+                                    "• Distance: ~" + roundTripKm + " km Round-Trip (Going & Coming)\n" +
+                                    "• Transit Fare Rate: ₦" + ratePerKm + "/km (₦" + transitDistanceFee.toLocaleString() + ")\n" +
+                                    "• Diagnostic Tooling / Luggage Handling: ₦" + luggageAllowance.toLocaleString() + "\n" +
+                                    "• On-Site Technician / Team Dispatch: ₦" + teamAllowance.toLocaleString() + "\n" +
+                                    "• Total Mobility Surcharge: ₦" + mobilityFee.toLocaleString() + "\n\n" +
+                                    "SERVICE COST:\n" +
+                                    "• Base Inspection & System Diagnosis Fee: ₦" + baseFee.toLocaleString() + "\n\n" +
                                     "TOTAL ESTIMATE DUE: ₦" + totalEstimate.toLocaleString() + "\n\n" +
                                     "BANK PAYMENT ROUTING:\n" +
                                     "• Bank: UBA Bank\n" +
@@ -258,7 +263,15 @@ async function initializeUCAUTOTECH_WMS() {
                                     "Verification: Transfer exact amount above for instant Green Light clearance!";
 
                         imageToSend = 'invoice_template.jpg';
-                        logTransaction({ type: 'INVOICE', invoiceNo, spec: messageContent, total: totalEstimate, roundTripKm, client: senderJid });
+                        logTransaction({ 
+                            type: 'INVOICE', 
+                            invoiceNo, 
+                            spec: messageContent, 
+                            total: totalEstimate, 
+                            roundTripKm, 
+                            mobilityFee,
+                            client: senderJid 
+                        });
                     } else {
                         replyText = MASTER_SERVICE_MENU;
                     }
