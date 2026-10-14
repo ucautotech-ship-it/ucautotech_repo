@@ -291,3 +291,29 @@ console.log = (msg, ...args) => logger.info(typeof msg === 'object' ? JSON.strin
 console.error = (msg, ...args) => logger.error(typeof msg === 'object' ? JSON.stringify(msg) : msg);
 
 console.log("[WMS LOGGER ACTIVE] Persistent file logging initialized successfully.");
+
+// --- UCAUTOTECH Incoming Message & AI Advisory Listener ---
+sock.ev.on('messages.upsert', async ({ messages, type }) => {
+    if (type !== 'notify') return;
+
+    for (const m of messages) {
+        // Ignore messages sent by the bot itself or status broadcasts
+        if (m.key.fromMe || m.key.remoteJid === 'status@broadcast') continue;
+
+        const senderJid = m.key.remoteJid;
+        const messageContent = m.message?.conversation || m.message?.extendedTextMessage?.text;
+
+        if (!messageContent) continue;
+
+        console.log(`[INCOMING MSG] From ${senderJid}: ${messageContent}`);
+
+        // Quick automated response logic or Gemini integration for vehicle checks
+        let replyText = "UCAUTOTECH VIP Advisory 🟢: Thanks for reaching out! For vehicle inspections (like a 2025 Hyundai Sorento), our base diagnostic fee is ₦70,000. Please reply with the vehicle's location so we can calculate mobility surcharges and provide your UBA payment routing.";
+
+        if (messageContent.toLowerCase().includes('sorento') || messageContent.toLowerCase().includes('hyundai')) {
+            replyText = "UCAUTOTECH VIP Advisory 🟢:\n\nFor a **2025 Hyundai Sorento** Pre-Purchase Inspection, our comprehensive diagnostic check covers complete electronic module scanning, live data telemetry, and system health verification.\n\n*   **Base Inspection Fee:** ₦70,000\n*   **Next Step:** Please drop the exact location/address of the vehicle (Lagos / Interstate) to apply distance-based mobility fees and generate your UBA payment routing for Green Light (🟢) clearance.";
+        }
+
+        await sock.sendMessage(senderJid, { text: replyText });
+    }
+});
