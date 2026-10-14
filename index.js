@@ -35,12 +35,9 @@ async function initializeUCAUTOTECH_WMS() {
             const { connection, lastDisconnect } = update;
             if (connection === 'close') {
                 const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
-                console.log(`[CONNECTION CLOSED] Reconnecting: ${shouldReconnect}`);
                 if (shouldReconnect) initializeUCAUTOTECH_WMS();
             } else if (connection === 'open') {
-                console.log("[UCAUTOTECH WMS v3.15] Autonomous Studio, AI Diagnostics & Status Broadcast Engine online!");
-                
-                // Launch Autonomous Background Status Broadcaster (Runs every 4 hours)
+                console.log("[UCAUTOTECH WMS v3.16] Clean formatting patch applied successfully.");
                 startAutonomousStatusEngine(sock);
             }
         });
@@ -49,33 +46,29 @@ async function initializeUCAUTOTECH_WMS() {
         function startAutonomousStatusEngine(activeSock) {
             setInterval(async () => {
                 try {
-                    const statusCaption = `🚀 **UCAUTOTECH VIP WORKSHOP STATUS BROADCAST** 🟢\n═══════════════════════════════\n🔧 Expert On-Site Diagnostics, Tiered Pricing & AI Fault Analysis.\n\n🔹 2015 & Older: ₦100,000 base\n🔹 2016 & Newer: ₦200,000 – ₦300,000\n🔹 Interstate: +50% Labor Markup\n\nMessage us now for instant service invoices and secure UBA payment routing!`;
+                    const statusCaption = "UCAUTOTECH VIP WORKSHOP STATUS\n\nExpert On-Site Diagnostics, Tiered Pricing & AI Fault Analysis.\n\n• 2015 & Older: ₦100,000 base\n• 2016 & Newer: ₦200,000 – ₦300,000\n• Interstate: +50% Labor Markup\n\nMessage us now for instant service invoices and secure UBA payment routing!";
                     
                     if (fs.existsSync('ucautotech_promo.jpg')) {
                         await activeSock.sendMessage('status@broadcast', {
                             image: fs.readFileSync('ucautotech_promo.jpg'),
                             caption: statusCaption
                         });
-                        console.log("[AUTONOMOUS STATUS] Successfully broadcasted branded promo graphic to WhatsApp status story.");
                     }
                 } catch (err) {
-                    console.error("[STATUS BROADCAST ERROR] Could not push to status story:", err.message);
+                    console.error("[STATUS BROADCAST ERROR]:", err.message);
                 }
-            }, 4 * 60 * 60 * 1000); // 4-hour interval cycle
+            }, 4 * 60 * 60 * 1000);
         }
 
         // Call Interception Handler
         sock.ev.on('call', async (calls) => {
             for (const call of calls) {
                 if (call.status === 'offer') {
-                    console.log(`[CALL DETECTED] Incoming call from ${call.from}`);
                     try {
                         await sock.rejectCall(call.id, call.from);
-                    } catch (err) {
-                        console.log("[CALL ERROR] Could not reject call:", err.message);
-                    }
+                    } catch (err) {}
                     await sock.sendMessage(call.from, {
-                        text: "🏛️ *UCAUTOTECH VIP WORKSHOP* 🟢\n\nCalls are automatically deflected to our 24/7 digital advisory. Type 'promo' to receive our brand promotional suite and service subscriptions."
+                        text: "UCAUTOTECH VIP WORKSHOP\n\nCalls are automatically deflected to our digital advisory. Type promo to receive our brand promotional suite and service subscriptions."
                     });
                 }
             }
@@ -97,8 +90,6 @@ async function initializeUCAUTOTECH_WMS() {
                                        msgObj.imageMessage?.caption || '';
 
                 const lowerContent = messageContent.toLowerCase();
-                console.log(`[INCOMING EVENT v3.15] Target: ${senderJid} | Content: "${messageContent}"`);
-
                 let replyText = "";
                 let imageToSend = null;
 
@@ -106,46 +97,36 @@ async function initializeUCAUTOTECH_WMS() {
                     if (fs.existsSync('ucautotech_promo.jpg')) {
                         imageToSend = 'ucautotech_promo.jpg';
                     }
-                    replyText = `🚀 **UCAUTOTECH VIP WORKSHOP & SUBSCRIPTION SUITE** 🟢
-═══════════════════════════════
-🔧 *Autonomous On-Site Diagnostics & Repair*
-
-🔹 **Tiered Pricing Structure:**
-• 2015 & Older: ₦100,000 base
-• 2016 & Newer: ₦200,000 – ₦300,000
-• Interstate: +50% Labor Surcharge
-• Separate Mobility & Transport Pricing
-
-⭐ **VIP Maintenance Subscriptions Available:**
-Sign up for corporate fleet monitoring, priority technician dispatch, and advanced AI diagnostics. Reply with your vehicle **model, year, and location** to generate your official electronic invoice!`;
+                    replyText = "UCAUTOTECH VIP WORKSHOP & SUBSCRIPTION SUITE\n\n" +
+                                "Autonomous On-Site Diagnostics & Repair\n\n" +
+                                "Tiered Pricing Structure:\n" +
+                                "• 2015 & Older: ₦100,000 base\n" +
+                                "• 2016 & Newer: ₦200,000 – ₦300,000\n" +
+                                "• Interstate: +50% Labor Surcharge\n" +
+                                "• Separate Mobility & Transport Pricing\n\n" +
+                                "VIP Maintenance Subscriptions:\n" +
+                                "Sign up for corporate fleet monitoring, priority technician dispatch, and advanced AI diagnostics. Reply with your vehicle model, year, and location to generate your official electronic invoice.";
                 } 
                 else if (lowerContent.includes('confirm') || lowerContent.includes('pay') || lowerContent.includes('send account')) {
-                    replyText = `🏛️ *UCAUTOTECH VIP WORKSHOP* - PAYMENT ROUTING 🟢
-═══════════════════════════════
-🏦 **Bank Name:** United Bank for Africa (UBA)
-📌 **Account Number:** [Insert UBA Account Number Here]
-👤 **Account Name:** UC Auto Care / UCAUTOTECH
-🔖 **Reference Tag:** #UC-${Math.floor(100000 + Math.random() * 900000)}
-
-⚠️ *Green Light (🟢) Clearance:* Please transfer the exact total sum and reply with your payment receipt/screenshot here to instantly lock in your technician dispatch!`;
+                    replyText = "UCAUTOTECH VIP WORKSHOP - PAYMENT ROUTING\n\n" +
+                                "Bank Name: United Bank for Africa (UBA)\n" +
+                                "Account Number: [Insert UBA Account Number Here]\n" +
+                                "Account Name: UC Auto Care / UCAUTOTECH\n" +
+                                "Reference Tag: #UC-" + Math.floor(100000 + Math.random() * 900000) + "\n\n" +
+                                "Clearance: Please transfer the exact total sum and reply with your payment receipt or screenshot here to instantly lock in your technician dispatch.";
                 } 
                 else if (lowerContent.includes('p0') || lowerContent.includes('p1') || lowerContent.includes('p2') || lowerContent.includes('code') || lowerContent.includes('fault') || lowerContent.includes('symptom') || lowerContent.includes('engine')) {
                     try {
-                        console.log("[AI DIAGNOSTIC] Consulting Gemini AI for trouble code/symptom breakdown...");
                         const response = await ai.models.generateContent({
                             model: 'gemini-2.5-flash',
-                            contents: `You are a master automotive diagnostic expert for UCAUTOTECH. Analyze this client query: "${messageContent}". Provide a concise, professional, 3-point technical breakdown with potential causes and a recommendation for our on-site inspection.`
+                            contents: "You are a master automotive diagnostic expert for UCAUTOTECH. Analyze this client query: \"" + messageContent + "\". Provide a concise, professional, 3-point technical breakdown with potential causes and a recommendation for our on-site inspection."
                         });
                         
-                        replyText = `🤖 **UCAUTOTECH AI DIAGNOSTIC ADVISORY** 🟢
-═══════════════════════════════
-${response.text}
-
-───────────────────────────────
-*Next Step:* Type **"promo"** for subscription options or reply with your vehicle's model, year, and location for an itemized invoice!`;
+                        replyText = "UCAUTOTECH AI DIAGNOSTIC ADVISORY\n\n" +
+                                    response.text + "\n\n" +
+                                    "Next Step: Type promo for subscription options or reply with your vehicle model, year, and location for an itemized invoice.";
                     } catch (aiErr) {
-                        console.error("[AI ERROR] Failed to query Gemini:", aiErr.message);
-                        replyText = "🏛️ *UCAUTOTECH VIP ADVISORY* 🟢\n\nWe received your technical inquiry. Our master technicians will evaluate this during your on-site inspection. Please reply with your vehicle model, year, and location.";
+                        replyText = "UCAUTOTECH VIP ADVISORY\n\nWe received your technical inquiry. Our master technicians will evaluate this during your on-site inspection. Please reply with your vehicle model, year, and location.";
                     }
                 } 
                 else {
@@ -190,33 +171,21 @@ ${response.text}
                         let coverageText = isInterstate ? "Interstate Dispatch (+50% Labor Markup)" : "Lagos Metropolitan Coverage";
                         let invoiceNo = "UC-" + Math.floor(100000 + Math.random() * 900000);
 
-                        replyText = `⚙️ **UCAUTOTECH AUTOMOTIVE CARE** 🟢
-═══════════════════════════════
-       📋 **ELECTRONIC SERVICE INVOICE** 📋
-═══════════════════════════════
-🔹 **Invoice ID:** #${invoiceNo}
-🔹 **Vehicle Year:** ${vehicleYear} (${bracketLabel})
-🔹 **Service Type:** Pre-Purchase Diagnostic & Inspection
-🔹 **Coverage Zone:** ${coverageText}
-
-───────────────────────────────
-💼 **ITEMIZED COST BREAKDOWN:**
-───────────────────────────────
-1️⃣ **Labor / Diagnostic Fee:** ${laborDisplay}
-2️⃣ **Mobility / Transport Fee:** ₦${mobilityFee.toLocaleString()} *(Distance-based logistics)*
-
-═══════════════════════════════
-💰 **TOTAL PAYABLE AMOUNT:** ${totalDisplay}
-═══════════════════════════════
-
-🏦 *Next Step for Green Light (🟢) Clearance:*
-Type **"Confirm & Pay"** to receive your official UBA payment routing details!`;
+                        replyText = "UCAUTOTECH AUTOMOTIVE CARE\n" +
+                                    "ELECTRONIC SERVICE INVOICE\n\n" +
+                                    "Invoice ID: #" + invoiceNo + "\n" +
+                                    "Vehicle Year: " + vehicleYear + " (" + bracketLabel + ")\n" +
+                                    "Service Type: Pre-Purchase Diagnostic & Inspection\n" +
+                                    "Coverage Zone: " + coverageText + "\n\n" +
+                                    "ITEMIZED COST BREAKDOWN:\n" +
+                                    "1. Labor / Diagnostic Fee: " + laborDisplay + "\n" +
+                                    "2. Mobility / Transport Fee: ₦" + mobilityFee.toLocaleString() + " (Distance-based logistics)\n\n" +
+                                    "TOTAL PAYABLE AMOUNT: " + totalDisplay + "\n\n" +
+                                    "Next Step for Clearance:\nType Confirm & Pay to receive your official UBA payment routing details.";
                     } else {
-                        replyText = `🏛️ *UCAUTOTECH VIP WORKSHOP* 🟢
-═══════════════════════════════
-Welcome! We provide advanced on-site diagnostics, AI fault analysis, and branded invoicing.
-
-Type **"promo"** or **"subscription"** to view our professional brand suite and flyer, or reply with your vehicle **Model, Year, and Location**.`;
+                        replyText = "UCAUTOTECH VIP WORKSHOP\n\n" +
+                                    "Welcome! We provide advanced on-site diagnostics, AI fault analysis, and branded invoicing.\n\n" +
+                                    "Type promo or subscription to view our professional brand suite, or reply with your vehicle Model, Year, and Location.";
                     }
                 }
 
@@ -232,7 +201,7 @@ Type **"promo"** or **"subscription"** to view our professional brand suite and 
         });
 
     } catch (error) {
-        console.error("[CRITICAL BOOT ERROR] Failed to initialize WMS runtime:", error);
+        console.error("[CRITICAL BOOT ERROR]:", error);
     }
 }
 
