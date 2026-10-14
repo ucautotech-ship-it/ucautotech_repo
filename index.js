@@ -37,7 +37,7 @@ async function initializeUCAUTOTECH_WMS() {
                 const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
                 if (shouldReconnect) initializeUCAUTOTECH_WMS();
             } else if (connection === 'open') {
-                console.log("[UCAUTOTECH WMS v3.16] Clean formatting patch applied successfully.");
+                console.log("[UCAUTOTECH WMS v3.17] Direct service list greeting patch applied successfully.");
                 startAutonomousStatusEngine(sock);
             }
         });
@@ -183,9 +183,18 @@ async function initializeUCAUTOTECH_WMS() {
                                     "TOTAL PAYABLE AMOUNT: " + totalDisplay + "\n\n" +
                                     "Next Step for Clearance:\nType Confirm & Pay to receive your official UBA payment routing details.";
                     } else {
-                        replyText = "UCAUTOTECH VIP WORKSHOP\n\n" +
-                                    "Welcome! We provide advanced on-site diagnostics, AI fault analysis, and branded invoicing.\n\n" +
-                                    "Type promo or subscription to view our professional brand suite, or reply with your vehicle Model, Year, and Location.";
+                        // Immediate Service List & Pricing Breakdown on general greeting/message
+                        replyText = "UCAUTOTECH VIP WORKSHOP - SERVICE LIST\n\n" +
+                                    "Welcome! We provide advanced on-site diagnostics, AI fault analysis, and automated electronic invoicing.\n\n" +
+                                    "OFFICIAL SERVICE & PRICING TIERS:\n" +
+                                    "• 2015 & Older Vehicles: ₦100,000 Base Labor\n" +
+                                    "• 2016 & Newer Vehicles: ₦200,000 – ₦300,000 Labor\n" +
+                                    "• Interstate Dispatch: +50% Labor Surcharge\n" +
+                                    "• Mobility & Logistics: Itemized per location\n\n" +
+                                    "HOW TO GET STARTED:\n" +
+                                    "1. Reply with your vehicle Model, Year, and Location (e.g. 2018 Toyota, Lagos) for an instant service invoice.\n" +
+                                    "2. Type promo or subscription to view our brand media suite.\n" +
+                                    "3. Send specific diagnostic fault codes (e.g. P189200) for AI technical analysis.";
                     }
                 }
 
