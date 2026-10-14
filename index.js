@@ -270,3 +270,24 @@ sock.ev.on('call', async (calls) => {
         }
     }
 });
+
+// --- UCAUTOTECH WMS v3.11 Persistent Winston Logger ---
+const winston = require('winston');
+
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        winston.format.printf(info => `[${info.timestamp}] [${info.level.toUpperCase()}] ${info.message}`)
+    ),
+    transports: [
+        new winston.transports.Console(),
+        new winston.transports.File({ filename: 'wms-production.log', maxsize: 5242880, maxFiles: 5 })
+    ]
+});
+
+// Hook console logs into Winston for unified tracking
+console.log = (msg, ...args) => logger.info(typeof msg === 'object' ? JSON.stringify(msg) : msg);
+console.error = (msg, ...args) => logger.error(typeof msg === 'object' ? JSON.stringify(msg) : msg);
+
+console.log("[WMS LOGGER ACTIVE] Persistent file logging initialized successfully.");
