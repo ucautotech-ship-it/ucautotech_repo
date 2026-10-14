@@ -2,6 +2,7 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, download
 const { GoogleGenAI } = require('@google/genai');
 const fs = require('fs');
 const winston = require('winston');
+require('dotenv').config();
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "API_KEY_PLACEHOLDER" });
 const ADMIN_JID = process.env.ADMIN_JID || "2348000000000@s.whatsapp.net";
@@ -21,43 +22,84 @@ const logger = winston.createLogger({
 console.log = (msg) => logger.info(typeof msg === 'object' ? JSON.stringify(msg) : msg);
 console.error = (msg) => logger.error(typeof msg === 'object' ? JSON.stringify(msg) : msg);
 
+// --- STRUCTURED DATA STORES ---
 const LEDGER_FILE = 'wms_ledger.json';
-function logTransaction(entry) {
-    let ledger = [];
+const CUSTOMERS_FILE = 'customers.json';
+const JOBS_FILE = 'jobs.json';
+
+function loadJSON(filename) {
     try {
-        if (fs.existsSync(LEDGER_FILE)) {
-            ledger = JSON.parse(fs.readFileSync(LEDGER_FILE, 'utf8'));
+        if (fs.existsSync(filename)) {
+            return JSON.parse(fs.readFileSync(filename, 'utf8'));
         }
     } catch (e) {}
-    ledger.push({ timestamp: new Date().toISOString(), ...entry });
-    fs.writeFileSync(LEDGER_FILE, JSON.stringify(ledger, null, 2));
+    return [];
 }
 
+function saveJSON(filename, data) {
+    fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+}
+
+function logTransaction(entry) {
+    let ledger = loadJSON(LEDGER_FILE);
+    ledger.push({ timestamp: new Date().toISOString(), ...entry });
+    saveJSON(LEDGER_FILE, ledger);
+}
+
+function updateCustomerProfile(jid, name, vehicleSpec) {
+    let customers = loadJSON(CUSTOMERS_FILE);
+    let customer = customers.find(c => c.jid === jid);
+    if (!customer) {
+        customer = { jid, name: name || "Valued Client", vehicles: [], createdAt: new Date().toISOString() };
+        customers.push(customer);
+    }
+    if (vehicleSpec && !customer.vehicles.includes(vehicleSpec)) {
+        customer.vehicles.push(vehicleSpec);
+    }
+    customer.lastSeen = new Date().toISOString();
+    saveJSON(CUSTOMERS_FILE, customers);
+}
+
+function createJobCard(invoiceNo, jid, spec, totalEstimate, breakdown) {
+    let jobs = loadJSON(JOBS_FILE);
+    jobs.push({
+        invoiceNo,
+        clientJid: jid,
+        specification: spec,
+        totalEstimate,
+        breakdown,
+        status: 'Quotation Sent',
+        createdAt: new Date().toISOString()
+    });
+    saveJSON(JOBS_FILE, jobs);
+}
+
+// --- MASTER SERVICE MENU (UPGRADED v3.45) ---
 const MASTER_SERVICE_MENU = 
     "Good day from UCAUTOTECH,\n\n" +
     "==============================\n" +
     "       UCAUTOTECH / UC AUTOMOBILE CARE       \n" +
-    "          VIP WORKSHOP SERVICES v3.40         \n" +
+    "          VIP WORKSHOP SERVICES v3.45         \n" +
     "==============================\n\n" +
-    "1. Full System Diagnosis (₦30k - ₦50k)\n" +
-    "2. ECM / PCM Programming & Flashing (₦70k - ₦350k)\n" +
-    "3. Smart Keys & Immobilizer Coding (₦70k - ₦250k)\n" +
-    "4. Advanced Module Calibration (₦70k - ₦200k)\n" +
-    "5. Servicing & Routine Maintenance (₦20k - ₦50k)\n" +
-    "6. Engine Replacement (₦100k - ₦450k)\n" +
-    "7. Pre-Purchase Vehicle Inspection (₦150k - ₦200k+)\n" +
-    "8. DTC Lookup & Maintenance Subscription (₦5,000/mo)\n\n" +
-    "Reply 1-8 for service info, type #location for workshop map pin, or send your vehicle specs (e.g. 2018 Lexus RX350, Lekki) for an instant verified invoice with equipment & team dispatch mobility!";
+    "1. Full System Diagnosis (₦30,000 - ₦50,000)\n" +
+    "2. ECM / PCM Programming & Flashing (₦70,000 - ₦350,000)\n" +
+    "3. Smart Keys & Immobilizer Coding (₦70,000 - ₦250,000)\n" +
+    "4. Advanced Module Calibration (₦70,000 - ₦200,000)\n" +
+    "5. Servicing & Routine Maintenance (₦25,000 - ₦120,000)\n" +
+    "6. Brake, ABS & ESP Systems (₦40,000 - ₦180,000)\n" +
+    "7. Airbag / SRS Module Services (₦50,000 - ₦200,000)\n" +
+    "8. ADAS & Driver Assistance Calibration (₦80,000 - ₦350,000)\n\n" +
+    "Reply 1-8 for service info, type #location for workshop map pin, or send your vehicle specs (e.g. 2018 Lexus RX350, Lekki) for an instant verified invoice with round-trip mobility!";
 
 const SERVICE_DETAILS = {
     '1': { name: "Full System Diagnosis", price: "₦30,000 - ₦50,000", baseNum: 40000 },
     '2': { name: "ECM / PCM Programming & Flashing", price: "₦70,000 - ₦350,000", baseNum: 150000 },
     '3': { name: "Smart Keys & Immobilizer Coding", price: "₦70,000 - ₦250,000", baseNum: 100000 },
     '4': { name: "Advanced Module Calibration", price: "₦70,000 - ₦200,000", baseNum: 90000 },
-    '5': { name: "Servicing & Routine Maintenance", price: "₦20,000 - ₦50,000", baseNum: 35000 },
-    '6': { name: "Engine Replacement", price: "₦100,000 - ₦450k", baseNum: 250000 },
-    '7': { name: "Pre-Purchase Vehicle Inspection", price: "₦150,000 - ₦200,000+", baseNum: 175000 },
-    '8': { name: "DTC Lookup & Maintenance Subscription", price: "₦5,000/mo", baseNum: 5000 }
+    '5': { name: "Servicing & Routine Maintenance", price: "₦25,000 - ₦120,000", baseNum: 45000 },
+    '6': { name: "Brake, ABS & ESP Systems", price: "₦40,000 - ₦180,000", baseNum: 80000 },
+    '7': { name: "Airbag / SRS Module Services", price: "₦50,000 - ₦200,000", baseNum: 95000 },
+    '8': { name: "ADAS & Driver Assistance Calibration", price: "₦80,000 - ₦350,000", baseNum: 120000 }
 };
 
 async function initializeUCAUTOTECH_WMS() {
@@ -77,7 +119,7 @@ async function initializeUCAUTOTECH_WMS() {
                 const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
                 if (shouldReconnect) initializeUCAUTOTECH_WMS();
             } else if (connection === 'open') {
-                console.log("[UCAUTOTECH WMS v3.40] Equipment & Team Mobility Engine Online!");
+                console.log("[UCAUTOTECH WMS v3.45] Master Enterprise Engine Online!");
                 startAutonomousStatusEngine(sock);
                 startDailyFinancialCron(sock);
             }
@@ -86,7 +128,7 @@ async function initializeUCAUTOTECH_WMS() {
         function startAutonomousStatusEngine(activeSock) {
             setInterval(async () => {
                 try {
-                    const statusCaption = "UCAUTOTECH / UC AUTOMOBILE CARE\nVIP WORKSHOP SERVICES v3.40\n\nOn-site mobile team dispatch with full diagnostic scanner rigs & tool transport.\nMessage us for instant automated invoicing!";
+                    const statusCaption = "UCAUTOTECH / UC AUTOMOBILE CARE\nVIP WORKSHOP SERVICES v3.45\n\nFull System Diagnostics, ECM Programming, ABS/SRS, ADAS Calibration & On-Site Team Dispatch.\nMessage us for instant automated invoicing!";
                     if (fs.existsSync('ucautotech_promo.jpg')) {
                         await activeSock.sendMessage('status@broadcast', {
                             image: fs.readFileSync('ucautotech_promo.jpg'),
@@ -102,15 +144,15 @@ async function initializeUCAUTOTECH_WMS() {
         function startDailyFinancialCron(activeSock) {
             setInterval(async () => {
                 try {
-                    if (!fs.existsSync(LEDGER_FILE)) return;
-                    const ledger = JSON.parse(fs.readFileSync(LEDGER_FILE, 'utf8'));
+                    const ledger = loadJSON(LEDGER_FILE);
+                    const jobs = loadJSON(JOBS_FILE);
                     const today = new Date().toDateString();
                     const todaysEntries = ledger.filter(item => new Date(item.timestamp).toDateString() === today);
                     
                     if (todaysEntries.length === 0) return;
 
                     const totalInvoices = todaysEntries.filter(i => i.type === 'INVOICE').length;
-                    const summaryText = `UCAUTOTECH ADMIN - DAILY REVENUE REPORT\nDate: ${today}\n\n• Invoices Generated: ${totalInvoices}\n• Total Logged Events: ${todaysEntries.length}\n\nSystem operating at peak enterprise efficiency.`;
+                    const summaryText = `UCAUTOTECH ADMIN - DAILY REVENUE & JOB REPORT\nDate: ${today}\n\n• Invoices Generated: ${totalInvoices}\n• Active Jobs: ${jobs.length}\n• Total Logged Events: ${todaysEntries.length}\n\nSystem operating at peak enterprise efficiency.`;
                     
                     await activeSock.sendMessage(ADMIN_JID, { text: summaryText });
                 } catch (err) {
@@ -137,8 +179,11 @@ async function initializeUCAUTOTECH_WMS() {
                 if (m.key.fromMe || m.key.remoteJid === 'status@broadcast') continue;
 
                 const senderJid = m.key.remoteJid;
+                const pushName = m.pushName || "Valued Client";
                 const msgObj = m.message;
                 if (!msgObj) continue;
+
+                updateCustomerProfile(senderJid, pushName);
 
                 let messageContent = msgObj.conversation || 
                                        msgObj.extendedTextMessage?.text || 
@@ -196,7 +241,7 @@ async function initializeUCAUTOTECH_WMS() {
                     const service = SERVICE_DETAILS[choice];
 
                     replyText = "UCAUTOTECH / UC AUTOMOBILE CARE\n" +
-                                "VIP WORKSHOP SERVICES v3.40\n\n" +
+                                "VIP WORKSHOP SERVICES v3.45\n\n" +
                                 "Selected Service: " + service.name + "\n" +
                                 "Standard Rate: " + service.price + "\n\n" +
                                 "Next Step: Reply with your vehicle Model, Year, and Location (e.g. 2017 Bentley Bentayga, Lekki) to generate your official electronic invoice!";
@@ -225,14 +270,13 @@ async function initializeUCAUTOTECH_WMS() {
 
                         let baseFee = vehicleYear >= 2016 ? 50000 : 40000;
                         
-                        // Distance and Logistics Breakdown
                         let oneWayKm = isLekki ? 23.6 : (isMainland ? 10.0 : 15.0);
                         let roundTripKm = oneWayKm * 2;
-                        let ratePerKm = 750; // Updated rate covering ride fares & transit
+                        let ratePerKm = 750;
                         let transitDistanceFee = roundTripKm * ratePerKm;
                         
-                        let luggageAllowance = 5000; // Tooling / Scanner / Rig transport allowance
-                        let teamAllowance = 5000;    // Secondary Technician dispatch allowance
+                        let luggageAllowance = 5000; 
+                        let teamAllowance = 5000;    
                         
                         let mobilityFee = transitDistanceFee + luggageAllowance + teamAllowance;
                         let totalEstimate = baseFee + mobilityFee;
@@ -240,13 +284,15 @@ async function initializeUCAUTOTECH_WMS() {
                         let invoiceNo = "UC-" + Math.floor(100000 + Math.random() * 900000);
                         let currentDate = new Date().toLocaleDateString();
 
+                        updateCustomerProfile(senderJid, pushName, messageContent);
+
                         replyText = "==============================\n" +
                                     "       UCAUTOTECH / UC AUTOMOBILE CARE       \n" +
                                     "          OFFICIAL WORKSHOP INVOICE         \n" +
                                     "==============================\n\n" +
                                     "Invoice No: #" + invoiceNo + "\n" +
                                     "Date: " + currentDate + "\n" +
-                                    "Client: Valued Client\n\n" +
+                                    "Client: " + pushName + "\n\n" +
                                     "SPECIFICATION: " + messageContent + "\n\n" +
                                     "MOBILITY & DISPATCH BREAKDOWN:\n" +
                                     "• Distance: ~" + roundTripKm + " km Round-Trip (Going & Coming)\n" +
@@ -263,15 +309,10 @@ async function initializeUCAUTOTECH_WMS() {
                                     "Verification: Transfer exact amount above for instant Green Light clearance!";
 
                         imageToSend = 'invoice_template.jpg';
-                        logTransaction({ 
-                            type: 'INVOICE', 
-                            invoiceNo, 
-                            spec: messageContent, 
-                            total: totalEstimate, 
-                            roundTripKm, 
-                            mobilityFee,
-                            client: senderJid 
-                        });
+                        
+                        const breakdown = { roundTripKm, ratePerKm, transitDistanceFee, luggageAllowance, teamAllowance, baseFee, mobilityFee };
+                        logTransaction({ type: 'INVOICE', invoiceNo, spec: messageContent, total: totalEstimate, roundTripKm, mobilityFee, client: senderJid });
+                        createJobCard(invoiceNo, senderJid, messageContent, totalEstimate, breakdown);
                     } else {
                         replyText = MASTER_SERVICE_MENU;
                     }
