@@ -253,3 +253,20 @@ async function issueGreenLight(sock, clientJid) {
 }
 
 startBot();
+
+// Listen for incoming WhatsApp calls in real-time
+sock.ev.on('call', async (calls) => {
+    for (const call of calls) {
+        if (call.status === 'offer') {
+            console.log(`[CALL DETECTED] Incoming call from ${call.from} (ID: ${call.id})`);
+            try {
+                await sock.rejectCall(call.id, call.from);
+            } catch (err) {
+                console.log("[CALL ERROR] Could not auto-reject call:", err.message);
+            }
+            await sock.sendMessage(call.from, {
+                text: "Automated Notice 🟢: UCAUTOTECH VIP Workshop is currently active via text/AI advisory. Please drop your vehicle details, diagnostic codes, or location for instant processing!"
+            });
+        }
+    }
+});
